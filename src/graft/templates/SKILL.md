@@ -83,10 +83,12 @@ A complete first cut:
 ```python
 """GitHub REST + GraphQL helpers."""
 
+from typing import Any, cast
+
 from graft.context import request
 
 
-def list_issues(owner: str, repo: str, state: str = "open", limit: int = 30) -> list[dict]:
+def list_issues(owner: str, repo: str, state: str = "open", limit: int = 30) -> list[dict[str, Any]]:
     """List GitHub issues for a repository.
 
     Generalization:
@@ -94,12 +96,15 @@ def list_issues(owner: str, repo: str, state: str = "open", limit: int = 30) -> 
         Variant example: list_issues("python", "cpython", state="closed")
         Not applicable: GitHub Enterprise on custom domains.
     """
-    return request(
-        "github",
-        "GET",
-        f"https://api.github.com/repos/{owner}/{repo}/issues",
-        params={"state": state, "per_page": limit},
-    ).json()
+    return cast(
+        list[dict[str, Any]],
+        request(
+            "github",
+            "GET",
+            f"https://api.github.com/repos/{owner}/{repo}/issues",
+            params={"state": state, "per_page": limit},
+        ).json(),
+    )
 ```
 
 Four things this file does right:
@@ -113,6 +118,20 @@ Four things this file does right:
 4. Every public function has full type annotations on parameters and return
    type. The CI runs `mypy --strict` over `helpers/`, and the cold-start
    acceptance criterion runs it locally. Untyped helpers fail the gate.
+
+### mypy --strict tips
+
+`request(...).json()` returns `Any`. Declaring `-> list[X]` directly fails
+with `no-any-return` because `Any` cannot implicitly narrow. Two patterns
+pass strict:
+
+- **`cast(...)`** (preferred — keeps type info for IDE and readers): wrap
+  the `.json()` call as in the example above.
+- **`-> Any`**: lossy but trivial; useful for one-off calls where the caller
+  will narrow.
+
+Skip `# type: ignore` unless mypy explicitly demands it; `unused-ignore`
+also fails strict.
 
 ## Helper Design Principles (read this carefully)
 
