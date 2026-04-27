@@ -1,0 +1,27 @@
+"""graft helpers package — auto-wraps via graft.loader on package import."""
+
+import sys
+from pathlib import Path
+
+from graft import loader
+
+_DIR = Path(__file__).parent
+
+
+class _LoadFailedModule:
+    """Sentinel exposing the captured load error on any attribute access."""
+
+    def __init__(self, error: Exception) -> None:
+        self._error = error
+
+    def __getattr__(self, name: str) -> object:
+        raise self._error
+
+
+for _file in _DIR.glob("*.py"):
+    if _file.name == "__init__.py" or _file.name.startswith("_"):
+        continue
+    try:
+        loader.load(_file.stem, helpers_dir=_DIR)
+    except Exception as _err:  # noqa: BLE001
+        sys.modules[f"helpers.{_file.stem}"] = _LoadFailedModule(_err)  # type: ignore[assignment]

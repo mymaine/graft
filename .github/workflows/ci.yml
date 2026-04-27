@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv (locked 0.5.x)
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.x"
+
+      - name: Set up Python ${{ matrix.python }}
+        run: uv python install ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Lint
+        run: uv run ruff check src/graft/ tests/
+
+      - name: Format check
+        run: uv run ruff format --check src/graft/ tests/
+
+      - name: Typecheck (strict, core only)
+        run: uv run mypy --strict src/graft/
+
+      - name: Unit + integration tests
+        run: uv run pytest tests/ -v
+
+      - name: Wheel build
+        run: uv build --wheel
+
+      - name: Verify templates packaged in wheel
+        run: |
+          unzip -l dist/*.whl | grep -q "graft/templates/SKILL.md"
+          unzip -l dist/*.whl | grep -q "graft/templates/helpers__init__.py.tmpl"
+
+  loc-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install scc 3.7.0 (locked)
+        run: |
+          wget -q https://github.com/boyter/scc/releases/download/v3.7.0/scc_Linux_x86_64.tar.gz
+          tar -xzf scc_Linux_x86_64.tar.gz
+          sudo mv scc /usr/local/bin/
+          scc --version | grep -q "3.7.0"
+
+      - name: Total core SLOC <= 800 (AC-6)
+        run: |
+          TOTAL=$(scc src/graft/ --no-cocomo --format json2 | python3 -c "import json,sys;d=json.load(sys.stdin);print(next((l['Code'] for l in d['languageSummary'] if l['Name']=='Python'), 0))")
+          echo "Total core SLOC: $TOTAL"
+          test "$TOTAL" -le 800 || (echo "core SLOC $TOTAL exceeds 800 ceiling"; exit 1)
+
+      - name: Per-module budget check (AC-7)
+        run: |
+          declare -A BUDGETS=(
+            [stats]=80
+            [circuit]=20
+            [validator]=80
+            [skill]=80
+            [daemon]=159
+            [git_memory]=80
+            [loader]=172
+            [cli]=128
+          )
+          for module in "${!BUDGETS[@]}"; do
+            FILE="src/graft/${module}.py"
+            [ -f "$FILE" ] || continue
+            CODE=$(scc "$FILE" --no-cocomo --format json2 | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['languageSummary'][0]['Code'] if d['languageSummary'] else 0)")
+            BUDGET=${BUDGETS[$module]}
+            echo "$module: $CODE / $BUDGET"
+            test "$CODE" -le "$BUDGET" || (echo "$module exceeds budget ($CODE > $BUDGET)"; exit 1)
+          done
+          LOADER=$(scc src/graft/loader.py --no-cocomo --format json2 | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['languageSummary'][0]['Code'])")
+          CONTEXT=$(scc src/graft/context.py --no-cocomo --format json2 | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['languageSummary'][0]['Code'])")
+          TOTAL=$((LOADER + CONTEXT))
+          echo "loader + context: $TOTAL / 172"
+          test "$TOTAL" -le 172 || (echo "loader + context exceeds 172"; exit 1)
