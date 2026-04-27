@@ -92,6 +92,7 @@ def hot_cmd(args: argparse.Namespace) -> int:
 
 
 def serve(_args: argparse.Namespace) -> int:
+    print("graft daemon starting (Ctrl+C to stop, port in .graft/daemon.port)", file=sys.stderr)
     daemon.serve()
     return 0
 
@@ -224,11 +225,10 @@ _DISPATCH: dict[str, Callable[[argparse.Namespace], int]] = {
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="graft")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("init")
+    for cmd in ("init", "stats", "serve"):
+        sub.add_parser(cmd)
     sub.add_parser("sync").add_argument("--force", action="store_true")
-    sub.add_parser("stats")
     sub.add_parser("hot").add_argument("--limit", type=int, default=10)
-    sub.add_parser("serve")
     reset_p = sub.add_parser("reset")
     reset_p.add_argument("service")
     sub.add_parser("inspect").add_argument("service")
