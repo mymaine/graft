@@ -344,29 +344,18 @@ def test_lookup_token_warns_when_auth_toml_unreadable(
     assert "auth.toml unreadable" in err
 
 
-def test_lookup_token_caches_auth_toml_after_first_read(
+def test_lookup_token_hot_reloads_auth_toml(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("GRAFT_GITHUB_TOKEN", raising=False)
     auth = tmp_path / "auth.toml"
-    auth.write_text('[github]\ntoken = "xyz"\n', encoding="utf-8")
-
-    reads: list[Path] = []
-    original = Path.read_text
-
-    def counting_read_text(self: Path, *args: object, **kwargs: object) -> str:
-        if self == auth:
-            reads.append(self)
-        return original(self, *args, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(Path, "read_text", counting_read_text)
+    auth.write_text('[github]\ntoken = "old"\n', encoding="utf-8")
 
     d = Daemon(auth_path=auth, stats_path=tmp_path / "stats.jsonl")
-    assert d._lookup_token("github") == "xyz"
-    assert d._lookup_token("github") == "xyz"
-    assert d._lookup_token("github") == "xyz"
+    assert d._lookup_token("github") == "old"
 
-    assert len(reads) == 1
+    auth.write_text('[github]\ntoken = "new"\n', encoding="utf-8")
+    assert d._lookup_token("github") == "new"
 
 
 def test_dispatch_500_reason_does_not_leak_message(

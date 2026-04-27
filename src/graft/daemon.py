@@ -46,7 +46,6 @@ class Daemon:
         self._transport = transport or httpx.HTTPTransport(retries=2)
         self._server: ThreadingHTTPServer | None = None
         self.actual_port: int = 0
-        self._auth_cache: dict[str, Any] | None = None
 
     def bind(self, host: str, port: int, port_file: Path) -> None:
         srv = ThreadingHTTPServer((host, port), _Handler)
@@ -107,12 +106,10 @@ class Daemon:
         return {"loaded": [], "errors": []}
 
     def _lookup_token(self, service: str) -> str | None:
-        """Env var beats auth.toml; auth.toml is read once on first lookup, restart to reload."""
+        """Env var beats auth.toml; auth.toml re-read on every lookup (hot-reload)."""
         if env := os.environ.get(f"GRAFT_{_ENV_KEY_SAFE.sub('_', service.upper())}_TOKEN"):
             return env
-        if self._auth_cache is None:
-            self._auth_cache = _read_toml(self.auth_path)
-        sec = self._auth_cache.get(service)
+        sec = _read_toml(self.auth_path).get(service)
         return tok if isinstance(sec, dict) and isinstance(tok := sec.get("token"), str) else None
 
 
@@ -131,7 +128,8 @@ def serve(
             sys.exit(1)
     d = Daemon(auth_path=auth_path)
     d.bind(host=host, port=port, port_file=port_file)
-    cast("ThreadingHTTPServer", d._server).serve_forever()
+    with contextlib.suppress(KeyboardInterrupt):
+        cast("ThreadingHTTPServer", d._server).serve_forever()
 
 
 def _unlink_quiet(p: Path) -> None:
