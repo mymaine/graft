@@ -45,7 +45,7 @@ jobs:
       - name: Verify templates packaged in wheel
         run: |
           unzip -l dist/*.whl | grep -q "graft/templates/SKILL.md"
-          unzip -l dist/*.whl | grep -q "graft/templates/helpers__init__.py.tmpl"
+          unzip -l dist/*.whl | grep -q "graft/templates/init.tmpl"
           unzip -l dist/*.whl | grep -q "graft/py.typed"
 
   loc-gate:
