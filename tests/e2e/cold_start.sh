@@ -132,6 +132,23 @@ if [[ $EXIT_CODE -eq 0 ]]; then
   echo "PASS (e): cold-start acceptance criteria all green"
 else
   echo "FAIL: cold-start gates above failed"
+  echo
+  echo "=== evidence dump (paste this back to lead for diagnosis) ==="
+  echo "--- git log --all --oneline ---"
+  git log --all --oneline 2>&1 || true
+  echo "--- git status --short ---"
+  git status --short 2>&1 || true
+  echo "--- git diff HEAD ---"
+  git diff HEAD 2>&1 || true
+  echo "--- daemon.log (tail 100) ---"
+  tail -100 daemon.log 2>&1 || true
+  echo "--- .graft/stats.jsonl ---"
+  cat .graft/stats.jsonl 2>&1 || true
+  echo "--- helpers/github.py ---"
+  cat helpers/github.py 2>&1 || true
+  echo "--- ls -la .graft/ ---"
+  ls -la .graft/ 2>&1 || true
+  echo "=== end evidence dump ==="
 fi
 
 exit $EXIT_CODE
