@@ -148,9 +148,16 @@ scc src/graft/                                # LOC audit
 
 ### Running the cold-start E2E
 
-`tests/e2e/cold_start.sh` drives Claude Code through the entire flow (write helper → call → stats → commit) and verifies five acceptance gates. Requires `ANTHROPIC_API_KEY` and the `claude` CLI:
+`tests/e2e/cold_start.sh` drives Claude Code through the entire flow (write helper → call → stats → commit) and verifies five acceptance gates. Authentication has two paths:
+
+- **CI**: set `ANTHROPIC_API_KEY` (no browser available)
+- **Local**: run `claude login` once; the script falls back to your OAuth session, no API key needed
 
 ```bash
+# Local (you've already run 'claude login'):
+bash tests/e2e/cold_start.sh
+
+# CI:
 ANTHROPIC_API_KEY=... bash tests/e2e/cold_start.sh
 ```
 

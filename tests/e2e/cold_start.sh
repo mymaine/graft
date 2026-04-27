@@ -9,13 +9,19 @@
 #   (d) mypy --strict on the new helper passes
 #   (e) overall exit code is 0
 #
-# Requires: ANTHROPIC_API_KEY (CI secret), claude CLI, uv, git, scc-free.
+# Requires: claude CLI (with ANTHROPIC_API_KEY in CI, or OAuth session via
+# 'claude login' for local users), uv, git.
 
 set -euo pipefail
 
-: "${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY required}"
 command -v claude >/dev/null || { echo "claude CLI not installed"; exit 1; }
 command -v uv >/dev/null     || { echo "uv not installed"; exit 1; }
+
+# Auth: claude CLI uses ANTHROPIC_API_KEY (CI) or its own OAuth session (local).
+if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+  echo "Note: ANTHROPIC_API_KEY not set — relying on claude CLI OAuth session."
+  echo "If claude fails below with an auth error, run 'claude login' first."
+fi
 
 GRAFT_REPO="${GRAFT_REPO:-$(cd "$(dirname "$0")/../.." && pwd)}"
 TEST_DIR="$(mktemp -d -t graft-coldstart-XXXXXX)"
