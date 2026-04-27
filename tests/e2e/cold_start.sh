@@ -42,8 +42,11 @@ git init -q
 git config user.email "test@cold-start"
 git config user.name  "test"
 
-# daemon.log lives in cwd; ignore it so the dirty-tree gate doesn't trip auto-commit
-echo "daemon.log" > .gitignore
+# Ignore graft runtime so the dirty-tree gate doesn't trip auto-commit
+cat > .gitignore <<EOF
+.graft/
+daemon.log
+EOF
 
 # Install graft from source (editable)
 uv venv -q
