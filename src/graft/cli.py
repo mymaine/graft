@@ -33,13 +33,12 @@ def init(_args: argparse.Namespace) -> int:
     (cwd / "helpers" / "__init__.py").write_text(_read_pkg("init.tmpl"), encoding="utf-8")
     (cwd / ".graft").mkdir(exist_ok=True)
     skill.write_project_skill(cwd, _render_template())
-    skill.append_claude_md(cwd)
     gi = cwd / ".gitignore"
     old = gi.read_text(encoding="utf-8").splitlines() if gi.exists() else []
     have = set(map(str.strip, old))
     if missing := [e for e in (".graft/", "__pycache__/", "*.pyc") if e not in have]:
         gi.write_text("\n".join(old + missing) + "\n", encoding="utf-8")
-    print("graft initialized: helpers/, .graft/, .claude/skills/graft/, CLAUDE.md", file=sys.stderr)
+    print("graft initialized: helpers/, .graft/, .claude/skills/graft/", file=sys.stderr)
     return 0
 
 

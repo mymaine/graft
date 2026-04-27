@@ -9,7 +9,6 @@ from pytest import CaptureFixture
 
 from graft.skill import (
     PROJECT_SKILL_PATH,
-    append_claude_md,
     generate_index,
     render_skill_md,
     write_project_skill,
@@ -207,27 +206,3 @@ def test_write_project_skill_creates_nested_dirs(tmp_path: Path) -> None:
     target = tmp_path / PROJECT_SKILL_PATH
     assert target.read_text(encoding="utf-8") == "skill body\n"
     assert target.parent.is_dir()
-
-
-def test_append_claude_md_creates_when_missing(tmp_path: Path) -> None:
-    append_claude_md(tmp_path)
-    cm = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
-    assert "graft" in cm
-    assert "SKILL.md" in cm
-
-
-def test_append_claude_md_appends_when_no_graft(tmp_path: Path) -> None:
-    cm_path = tmp_path / "CLAUDE.md"
-    cm_path.write_text("# Existing rules\n\nDo X first.\n", encoding="utf-8")
-    append_claude_md(tmp_path)
-    cm = cm_path.read_text(encoding="utf-8")
-    assert "Do X first." in cm
-    assert "graft" in cm
-
-
-def test_append_claude_md_skips_when_graft_already_present(tmp_path: Path) -> None:
-    original = "# Rules\n\nThis project uses graft already.\n"
-    cm_path = tmp_path / "CLAUDE.md"
-    cm_path.write_text(original, encoding="utf-8")
-    append_claude_md(tmp_path)
-    assert cm_path.read_text(encoding="utf-8") == original
