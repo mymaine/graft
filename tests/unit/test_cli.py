@@ -80,7 +80,7 @@ def test_init_writes_helpers_init_with_eager_load(in_tmp: Path) -> None:
 
 def test_read_helpers_init_returns_template_content() -> None:
     """Template lookup uses package data, not filesystem heuristics."""
-    text = cli._read_helpers_init()
+    text = cli._read_pkg("init.tmpl")
     assert "from graft import loader" in text
     assert "loader.load" in text
 
@@ -616,7 +616,7 @@ def test_version_resolves_from_package_metadata() -> None:
 
 def test_read_template_returns_skill_md_content() -> None:
     """Template lookup uses package data, not filesystem heuristics."""
-    text = cli._read_template()
+    text = cli._read_pkg("SKILL.md")
     assert "{{VERSION}}" in text
     assert len(text) > 0
 

@@ -195,9 +195,9 @@ def test_full_self_edit_loop_writes_stats_for_real_call(
     with _running_graft(tmp_path, mock_handler=_github_mock) as (root, port_file, _):
         (root / "helpers" / "github.py").write_text(VALID_GITHUB_HELPER, encoding="utf-8")
 
-        from graft.cli import _read_helpers_init
+        from graft.cli import _read_pkg
 
-        (root / "helpers" / "__init__.py").write_text(_read_helpers_init(), encoding="utf-8")
+        (root / "helpers" / "__init__.py").write_text(_read_pkg("init.tmpl"), encoding="utf-8")
 
         monkeypatch.chdir(root)
         monkeypatch.setattr(loader, "PORT_FILE", port_file)
@@ -399,9 +399,9 @@ def test_broken_helper_does_not_block_other_helpers(
         (root / "helpers" / "github.py").write_text(VALID_GITHUB_HELPER, encoding="utf-8")
         (root / "helpers" / "broken.py").write_text(INVALID_LINEAR_HELPER, encoding="utf-8")
 
-        from graft.cli import _read_helpers_init
+        from graft.cli import _read_pkg
 
-        (root / "helpers" / "__init__.py").write_text(_read_helpers_init(), encoding="utf-8")
+        (root / "helpers" / "__init__.py").write_text(_read_pkg("init.tmpl"), encoding="utf-8")
 
         monkeypatch.chdir(root)
         monkeypatch.setattr(loader, "PORT_FILE", port_file)
@@ -437,9 +437,9 @@ def test_invalid_helper_raises_on_natural_import(
         (root / "helpers" / "github.py").write_text(VALID_GITHUB_HELPER, encoding="utf-8")
         (root / "helpers" / "broken.py").write_text(INVALID_LINEAR_HELPER, encoding="utf-8")
 
-        from graft.cli import _read_helpers_init
+        from graft.cli import _read_pkg
 
-        (root / "helpers" / "__init__.py").write_text(_read_helpers_init(), encoding="utf-8")
+        (root / "helpers" / "__init__.py").write_text(_read_pkg("init.tmpl"), encoding="utf-8")
 
         monkeypatch.chdir(root)
         monkeypatch.setattr(loader, "PORT_FILE", port_file)

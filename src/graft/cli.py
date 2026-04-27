@@ -19,25 +19,18 @@ from graft.stats import HelperStats
 VERSION = version("graft")
 
 
-def _read_template() -> str:
-    """Read templates/SKILL.md from graft package data."""
-    return (resources.files("graft") / "templates" / "SKILL.md").read_text(encoding="utf-8")
-
-
-def _read_helpers_init() -> str:
-    """Read templates/helpers__init__.py.tmpl from graft package data."""
-    path = resources.files("graft") / "templates" / "helpers__init__.py.tmpl"
-    return path.read_text(encoding="utf-8")
+def _read_pkg(name: str) -> str:
+    return (resources.files("graft") / "templates" / name).read_text(encoding="utf-8")
 
 
 def _render_template() -> str:
-    return skill.render_skill_md(_read_template(), VERSION)
+    return skill.render_skill_md(_read_pkg("SKILL.md"), VERSION)
 
 
 def init(_args: argparse.Namespace) -> int:
     cwd = Path.cwd()
     (cwd / "helpers").mkdir(exist_ok=True)
-    (cwd / "helpers" / "__init__.py").write_text(_read_helpers_init(), encoding="utf-8")
+    (cwd / "helpers" / "__init__.py").write_text(_read_pkg("init.tmpl"), encoding="utf-8")
     (cwd / ".graft").mkdir(exist_ok=True)
     (cwd / "SKILL.md").write_text(_render_template(), encoding="utf-8")
     gi = cwd / ".gitignore"
