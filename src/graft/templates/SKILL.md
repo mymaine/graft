@@ -38,11 +38,19 @@ After reading `INDEX.md`:
 
 - **Service exists, function exists** → import and call it
 - **Service exists, function missing** → append the new function to the file
-- **Service does not exist** → create `helpers/<service>.py`
+- **Service does not exist** → try `graft add` first (see below), then create `helpers/<service>.py` if not in registry
 
 Use the canonical short service name (`github`, not `github_api`; `notion`,
 not `notion_com`). Lowercase, no underscores unless the service's own brand
 uses one.
+
+### Before writing a new helper from scratch
+
+Try `graft add <service>` first. The official registry currently covers
+github / linear / notion / stripe (and grows). If `graft add` succeeds, you
+skip the cold-start research entirely. If it returns "not in registry
+manifest", that's expected for internal / niche / unreleased services —
+proceed to write your own.
 
 When you write or change `helpers/<service>.py`, graft auto-commits the change
 to git when the helper is next imported (if `GRAFT_AUTOCOMMIT=1`, the default).
