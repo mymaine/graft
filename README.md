@@ -117,7 +117,7 @@ graft sync           # regenerate helpers/INDEX.md from helpers/ + stats
 | `graft hot [--limit N]` | Top-N helpers by call count across all services |
 | `graft inspect <service>` | Per-service helper roster with calls / errors / last-used |
 | `graft prune --stale N [--apply]` | Archive helpers untouched ≥ N days into `helpers/_archive/` (dry-run by default) |
-| `graft add <service> [--registry URL] [--force]` | Pull a helper from a git registry (default: `https://github.com/maine/graft-registry`) |
+| `graft add <service> [--registry URL] [--force]` | Pull a helper from a git registry (default: `https://github.com/mymaine/graft-registry`) |
 | `graft reset <service>` | Clear the validator failure counter for `<service>` (after a `HelperLoadAborted`) |
 
 Pruned helpers stay in `helpers/_archive/` for git history continuity. `graft add <service>` does not warn about prior `_archive/<service>.py` — clean it manually if you reinstall.

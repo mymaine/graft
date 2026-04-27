@@ -16,7 +16,7 @@ from pathlib import Path
 
 from graft import validator
 
-DEFAULT_REGISTRY_URL = "https://github.com/maine/graft-registry"
+DEFAULT_REGISTRY_URL = "https://github.com/mymaine/graft-registry"
 ENV_VAR = "GRAFT_REGISTRY_URL"
 
 
