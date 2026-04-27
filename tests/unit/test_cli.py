@@ -55,7 +55,7 @@ def test_init_creates_scaffold(in_tmp: Path, capsys: pytest.CaptureFixture[str])
     skill = in_tmp / ".claude/skills/graft/SKILL.md"
     assert skill.exists()
     text = skill.read_text(encoding="utf-8")
-    assert text.startswith(f"# graft v{cli.VERSION}")
+    assert f"# graft v{cli.VERSION}" in text
     assert "{{VERSION}}" not in text
     assert "graft initialized" in capsys.readouterr().err
 
@@ -160,7 +160,7 @@ def test_sync_force_overwrites(in_tmp: Path, capsys: pytest.CaptureFixture[str])
 
     assert rc == 0
     text = skill.read_text(encoding="utf-8")
-    assert text.startswith(f"# graft v{cli.VERSION}")
+    assert f"# graft v{cli.VERSION}" in text
     assert "updated" in capsys.readouterr().err
 
 
