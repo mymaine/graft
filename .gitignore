@@ -1,0 +1,55 @@
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+
+# Secrets
+.env
+.env.local
+.env.*.local
+.graft/auth.toml
+secrets/
+*.pem
+*.key
+
+# graft runtime data
+.graft/
+helpers/
+
+# Internal docs
+AGENTS.md
+CLAUDE.md
+docs/spec.md
+docs/decisions/
+docs/internal/
+docs/private/
+
+# Local notes
+notes/
+.notes/
+TODO.md
+NOTES.md
+SCRATCH.md
+*.draft.md
+
+# Agent context
+.claude/
+.claude-context*
+.cursorrules
+.aider*
