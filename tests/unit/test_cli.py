@@ -85,6 +85,41 @@ def test_read_helpers_init_returns_template_content() -> None:
     assert "loader.load" in text
 
 
+def test_init_creates_gitignore_when_missing(in_tmp: Path) -> None:
+    """case 1: no .gitignore → write all three needed entries."""
+    assert cli.main(["init"]) == 0
+
+    lines = (in_tmp / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert ".graft/" in lines
+    assert "__pycache__/" in lines
+    assert "*.pyc" in lines
+
+
+def test_init_appends_only_missing_gitignore_entries(in_tmp: Path) -> None:
+    """case 2: existing .gitignore keeps user content, only missing entries appended."""
+    (in_tmp / ".gitignore").write_text("node_modules/\n.graft/\n", encoding="utf-8")
+
+    assert cli.main(["init"]) == 0
+
+    text = (in_tmp / ".gitignore").read_text(encoding="utf-8")
+    lines = text.splitlines()
+    assert lines.count(".graft/") == 1  # not duplicated
+    assert "node_modules/" in lines  # user content preserved
+    assert "__pycache__/" in lines  # appended
+    assert "*.pyc" in lines  # appended
+    assert text.endswith("\n")
+
+
+def test_init_leaves_complete_gitignore_untouched(in_tmp: Path) -> None:
+    """case 3: all three entries already present → file is not rewritten."""
+    original = "custom\n.graft/\n__pycache__/\n*.pyc\n"
+    (in_tmp / ".gitignore").write_text(original, encoding="utf-8")
+
+    assert cli.main(["init"]) == 0
+
+    assert (in_tmp / ".gitignore").read_text(encoding="utf-8") == original
+
+
 # ---------------------------------------------------------------------------
 # sync
 # ---------------------------------------------------------------------------
