@@ -14,7 +14,7 @@ import pytest
 from pytest import CaptureFixture, MonkeyPatch
 
 from graft import git_memory
-from graft.git_memory import commit_helpers, should_commit
+from graft.git_memory import commit_helpers, git_log_mtime, git_mv, should_commit
 
 
 @pytest.fixture(autouse=True)
@@ -260,6 +260,78 @@ def test_commit_helpers_returns_false_when_helpers_missing_and_other_dirty(
     assert len(log) == 1
 
 
+def test_git_log_mtime_returns_epoch_for_committed_file(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+    (repo / "helpers").mkdir()
+    (repo / "helpers" / "github.py").write_text("x = 1\n", encoding="utf-8")
+    _run("add", "helpers/github.py", cwd=repo)
+    _run("commit", "-q", "-m", "add github", cwd=repo)
+
+    ts = git_log_mtime("helpers/github.py", repo)
+
+    assert isinstance(ts, int)
+    assert ts > 0
+
+
+def test_git_log_mtime_none_for_untracked_file(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+    (repo / "helpers").mkdir()
+    (repo / "helpers" / "fresh.py").write_text("x = 1\n", encoding="utf-8")
+
+    assert git_log_mtime("helpers/fresh.py", repo) is None
+
+
+def test_git_log_mtime_none_for_missing_file(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+
+    assert git_log_mtime("helpers/nonexistent.py", repo) is None
+
+
+def test_git_mv_moves_and_stages(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+    (repo / "helpers").mkdir()
+    src = repo / "helpers" / "stale.py"
+    src.write_text("y = 1\n", encoding="utf-8")
+    _run("add", "helpers/stale.py", cwd=repo)
+    _run("commit", "-q", "-m", "add stale", cwd=repo)
+    (repo / "helpers" / "_archive").mkdir()
+    dst = repo / "helpers" / "_archive" / "stale.py"
+
+    ok = git_mv(src, dst, repo)
+
+    assert ok is True
+    assert not src.exists()
+    assert dst.exists()
+    assert "helpers/_archive/stale.py" in _staged_files(repo)
+
+
+def test_git_mv_force_overwrites_existing_dst(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+    (repo / "helpers").mkdir()
+    src = repo / "helpers" / "stale.py"
+    src.write_text("new = 2\n", encoding="utf-8")
+    arch = repo / "helpers" / "_archive"
+    arch.mkdir()
+    (arch / "stale.py").write_text("old = 1\n", encoding="utf-8")
+    _run("add", "helpers/stale.py", "helpers/_archive/stale.py", cwd=repo)
+    _run("commit", "-q", "-m", "seed", cwd=repo)
+    dst = arch / "stale.py"
+
+    ok = git_mv(src, dst, repo)
+
+    assert ok is True
+    assert dst.read_text(encoding="utf-8") == "new = 2\n"
+
+
+def test_git_mv_returns_false_on_failure(tmp_path: Path, capsys: CaptureFixture[str]) -> None:
+    repo = _init_repo(tmp_path)
+
+    ok = git_mv(repo / "missing.py", repo / "dst.py", repo)
+
+    assert ok is False
+    assert "git_memory" in capsys.readouterr().err
+
+
 @pytest.mark.parametrize("value", ["0"])
 def test_should_commit_env_zero_short_circuits_before_git(
     tmp_path: Path, monkeypatch: MonkeyPatch, value: str
@@ -273,3 +345,29 @@ def test_should_commit_env_zero_short_circuits_before_git(
 
     assert proceed is False
     assert reason == "autocommit disabled"
+
+
+def test_is_dirty_outside_helpers_clean_tree_returns_none(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+
+    assert git_memory.is_dirty_outside_helpers(repo) is None
+
+
+def test_is_dirty_outside_helpers_helpers_only_returns_none(tmp_path: Path) -> None:
+    repo = _init_repo(tmp_path)
+    (repo / "helpers").mkdir()
+    (repo / "helpers" / "foo.py").write_text("x = 1\n", encoding="utf-8")
+
+    assert git_memory.is_dirty_outside_helpers(repo) is None
+
+
+def test_is_dirty_outside_helpers_flags_foreign_change(tmp_path: Path) -> None:
+    """Decoupled from autocommit: even with env=0, foreign dirt is reported."""
+    repo = _init_repo(tmp_path)
+    (repo / "scratch.txt").write_text("dirt\n", encoding="utf-8")
+
+    reason = git_memory.is_dirty_outside_helpers(repo)
+
+    assert reason is not None
+    assert reason.startswith("dirty tree:")
+    assert "scratch.txt" in reason

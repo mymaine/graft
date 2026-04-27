@@ -52,6 +52,22 @@ def _changed_paths(cwd: Path) -> list[str] | str:
     return list(dict.fromkeys(line for line in lines if line))
 
 
+def is_dirty_outside_helpers(cwd: Path | None = None) -> str | None:
+    """Return a 'dirty tree: ...' reason if non-helpers/ paths changed; else None.
+
+    Also surfaces 'git status unavailable' when git itself fails.
+    """
+    result = _changed_paths(cwd if cwd is not None else Path.cwd())
+    if isinstance(result, str):
+        return result
+    foreign = [p for p in result if not p.startswith(HELPERS)]
+    if not foreign:
+        return None
+    shown = ",".join(foreign[:3])
+    suffix = "..." if len(foreign) > 3 else ""
+    return f"dirty tree: {shown}{suffix}"
+
+
 def should_commit(cwd: Path | None = None) -> tuple[bool, str | None]:
     """Decide whether daemon may auto-commit. Skip on env=0, detached HEAD, or non-helpers/ dirt."""
     cwd = cwd if cwd is not None else Path.cwd()
@@ -59,15 +75,25 @@ def should_commit(cwd: Path | None = None) -> tuple[bool, str | None]:
         return False, "autocommit disabled"
     if not _on_branch(cwd):
         return False, "detached HEAD"
-    result = _changed_paths(cwd)
-    if isinstance(result, str):
-        return False, result
-    foreign = [p for p in result if not p.startswith(HELPERS)]
-    if foreign:
-        shown = ",".join(foreign[:3])
-        suffix = "..." if len(foreign) > 3 else ""
-        return False, f"dirty tree: {shown}{suffix}"
+    if reason := is_dirty_outside_helpers(cwd):
+        return False, reason
     return True, None
+
+
+def git_log_mtime(path: str, cwd: Path | None = None) -> int | None:
+    """Last commit epoch seconds for path; None if untracked or git fails."""
+    r = _run(["git", "log", "-1", "--format=%at", "--", path], cwd or Path.cwd())
+    out = r.stdout.strip()
+    return int(out) if r.returncode == 0 and out.isdigit() else None
+
+
+def git_mv(src: Path, dst: Path, cwd: Path | None = None) -> bool:
+    """git mv -f src dst (stages the move). Fails soft."""
+    r = _run(["git", "mv", "-f", str(src), str(dst)], cwd or Path.cwd())
+    if r.returncode != 0:
+        _warn(["git", "mv"], r)
+        return False
+    return True
 
 
 def commit_helpers(message: str, cwd: Path | None = None) -> bool:

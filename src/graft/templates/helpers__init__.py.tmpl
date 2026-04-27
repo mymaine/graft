@@ -21,6 +21,9 @@ class _LoadFailedModule:
 for _file in _DIR.glob("*.py"):
     if _file.name == "__init__.py" or _file.name.startswith("_"):
         continue
+    # defense-in-depth: also skip if anyone changes glob() to rglob() later
+    if any(p.startswith("_") for p in _file.relative_to(_DIR).parts[:-1]):
+        continue
     try:
         loader.load(_file.stem, helpers_dir=_DIR)
     except Exception as _err:  # noqa: BLE001

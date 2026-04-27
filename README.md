@@ -18,8 +18,8 @@ Heavily inspired by [browser-use/browser-harness](https://github.com/browser-use
 
 This project is an experiment in extreme minimalism. The constraints are part of the product:
 
-- **Core runtime (daemon + CLI) ≤ 800 lines of Python** (CI-enforced via `scc`)
-- **Per-module budgets** — each module has a fixed line budget; PRs that exceed it must shrink elsewhere
+- **Hand-curated LOC budget for `src/graft/` (CI-enforced via `scc`)** — every line earns its place
+- **Per-module budgets** — each module has a fixed budget; PRs that exceed must shrink elsewhere
 - **bug fix must reduce or hold LOC** — adding lines means you missed the root cause
 
 LOC is a feature.
@@ -114,7 +114,13 @@ graft sync           # regenerate helpers/INDEX.md from helpers/ + stats
 | `graft serve` | Start the localhost daemon (blocks until Ctrl-C) |
 | `graft sync` | Regenerate `helpers/INDEX.md`; warn if `SKILL.md` differs from installed template |
 | `graft stats` | Show per-service usage table |
+| `graft hot [--limit N]` | Top-N helpers by call count across all services |
+| `graft inspect <service>` | Per-service helper roster with calls / errors / last-used |
+| `graft prune --stale N [--apply]` | Archive helpers untouched ≥ N days into `helpers/_archive/` (dry-run by default) |
+| `graft add <service> [--registry URL] [--force]` | Pull a helper from a git registry (default: `https://github.com/maine/graft-registry`) |
 | `graft reset <service>` | Clear the validator failure counter for `<service>` (after a `HelperLoadAborted`) |
+
+Pruned helpers stay in `helpers/_archive/` for git history continuity. `graft add <service>` does not warn about prior `_archive/<service>.py` — clean it manually if you reinstall.
 
 ### How agents learn the rules
 

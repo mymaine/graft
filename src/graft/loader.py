@@ -154,6 +154,13 @@ def load(
 
 
 def _track(fn: Callable[..., Any], service: str, port_file: Path) -> Callable[..., Any]:
+    """Wrap a public helper: one stats line per call.
+
+    Stats record at the wrapped boundary only — daemon /request is not tracked,
+    private (_-prefixed) helpers are not wrapped, and ContextVar prevents
+    re-entry double-counting when one helper calls another.
+    """
+
     @functools.wraps(fn)
     def w(*args: Any, **kwargs: Any) -> Any:
         if _in_helper.get():

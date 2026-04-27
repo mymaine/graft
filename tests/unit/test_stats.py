@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from pytest import CaptureFixture
 
-from graft.stats import ServiceStats, aggregate, append
+from graft.stats import HelperStats, ServiceStats, aggregate, aggregate_helpers, append
 
 FIXED_TS = datetime(2026, 4, 26, 15, 30, 21, tzinfo=UTC)
 
@@ -228,6 +228,62 @@ def test_append_swallows_oserror_and_warns(
     captured = capsys.readouterr()
     assert "stats append failed" in captured.err
     assert "disk full" in captured.err
+
+
+def test_aggregate_helpers_missing_file_returns_empty(tmp_path: Path) -> None:
+    assert aggregate_helpers(tmp_path / "none.jsonl") == {}
+
+
+def test_aggregate_helpers_empty_file_returns_empty(tmp_path: Path) -> None:
+    target = tmp_path / "stats.jsonl"
+    target.write_text("", encoding="utf-8")
+    assert aggregate_helpers(target) == {}
+
+
+def test_aggregate_helpers_skips_corrupt_and_warns(
+    tmp_path: Path, capsys: CaptureFixture[str]
+) -> None:
+    target = tmp_path / "stats.jsonl"
+    good = json.dumps(
+        {"service": "github", "helper": "list_issues", "ts": "2026-04-26T15:30:21Z", "ok": True}
+    )
+    target.write_text(f"{good}\nnot json\n{good}\n", encoding="utf-8")
+
+    result = aggregate_helpers(target)
+
+    assert "stats.jsonl line 2 corrupt" in capsys.readouterr().err
+    key = ("github", "list_issues")
+    assert isinstance(result[key], HelperStats)
+    assert result[key].calls == 2
+    assert result[key].errors == 0
+
+
+def test_aggregate_helpers_groups_per_helper_across_services(tmp_path: Path) -> None:
+    target = tmp_path / "stats.jsonl"
+    rows = [
+        ("github", "list_issues", datetime(2026, 4, 26, 10, 0, 0, tzinfo=UTC), True),
+        ("github", "list_issues", datetime(2026, 4, 26, 10, 1, 0, tzinfo=UTC), False),
+        ("github", "get_repo", datetime(2026, 4, 26, 10, 2, 0, tzinfo=UTC), True),
+        ("linear", "list_issues", datetime(2026, 4, 25, 9, 0, 0, tzinfo=UTC), True),
+    ]
+    for service, helper, ts, ok in rows:
+        append(service, helper, ts, ok=ok, path=target)
+
+    result = aggregate_helpers(target)
+
+    gh_list = result[("github", "list_issues")]
+    assert gh_list.calls == 2
+    assert gh_list.errors == 1
+    assert gh_list.last_ts == datetime(2026, 4, 26, 10, 1, 0, tzinfo=UTC)
+
+    gh_get = result[("github", "get_repo")]
+    assert gh_get.calls == 1
+    assert gh_get.errors == 0
+
+    linear_list = result[("linear", "list_issues")]
+    assert linear_list.calls == 1
+    assert linear_list.errors == 0
+    assert ("github", "list_issues") in result and ("linear", "list_issues") in result
 
 
 def test_append_skips_when_service_name_too_long(

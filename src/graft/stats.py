@@ -22,6 +22,13 @@ class ServiceStats:
     errors: int
 
 
+@dataclass(frozen=True)
+class HelperStats:
+    calls: int
+    errors: int
+    last_ts: datetime
+
+
 def _dump(service: str, helper: str, iso_ts: str, ok: bool) -> bytes:
     payload = {"service": service, "helper": helper, "ts": iso_ts, "ok": ok}
     return (json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
@@ -48,9 +55,25 @@ def append(service: str, helper: str, ts: datetime, ok: bool, path: Path = DEFAU
 
 def aggregate(path: Path) -> dict[str, ServiceStats]:
     """Reduce stats.jsonl. Missing/empty file => {}; corrupt line => skip + stderr warn."""
+    acc: dict[str, dict[str, Any]] = {}
+    for (svc, helper), h in aggregate_helpers(path).items():
+        b = acc.setdefault(svc, {"helpers": set(), "calls": 0, "errors": 0, "last_ts": h.last_ts})
+        b["helpers"].add(helper)
+        b["calls"] += h.calls
+        b["errors"] += h.errors
+        if h.last_ts > b["last_ts"]:
+            b["last_ts"] = h.last_ts
+    return {
+        s: ServiceStats(len(b["helpers"]), b["calls"], b["last_ts"], b["errors"])
+        for s, b in acc.items()
+    }
+
+
+def aggregate_helpers(path: Path) -> dict[tuple[str, str], HelperStats]:
+    """Per-helper aggregate keyed by (service, helper). Same parse rules as aggregate()."""
     if not path.exists():
         return {}
-    acc: dict[str, dict[str, Any]] = {}
+    acc: dict[tuple[str, str], dict[str, Any]] = {}
     for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if not raw.strip():
             continue
@@ -58,17 +81,13 @@ def aggregate(path: Path) -> dict[str, ServiceStats]:
         if rec is None:
             continue
         b = acc.setdefault(
-            rec["service"], {"helpers": set(), "calls": 0, "errors": 0, "last_ts": None}
+            (rec["service"], rec["helper"]), {"calls": 0, "errors": 0, "last_ts": None}
         )
-        b["helpers"].add(rec["helper"])
         b["calls"] += 1
         b["errors"] += 0 if rec["ok"] else 1
         if b["last_ts"] is None or rec["ts"] > b["last_ts"]:
             b["last_ts"] = rec["ts"]
-    return {
-        s: ServiceStats(len(b["helpers"]), b["calls"], b["last_ts"], b["errors"])
-        for s, b in acc.items()
-    }
+    return {k: HelperStats(b["calls"], b["errors"], b["last_ts"]) for k, b in acc.items()}
 
 
 def _parse(raw: str, n: int) -> dict[str, Any] | None:
