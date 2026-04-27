@@ -31,7 +31,11 @@ cleanup() {
     kill "$DAEMON_PID" 2>/dev/null || true
     wait "$DAEMON_PID"  2>/dev/null || true
   fi
-  rm -rf "$TEST_DIR"
+  if [[ "${EXIT_CODE:-0}" -eq 0 ]]; then
+    rm -rf "$TEST_DIR"
+  else
+    echo "TEST_DIR preserved for inspection: $TEST_DIR" >&2
+  fi
 }
 trap cleanup EXIT
 
@@ -81,6 +85,8 @@ Then complete the task:
 
 Constraints:
   - Service name must be exactly "github" (the file must be helpers/github.py).
+  - Do NOT use `graft add` or pull from any registry. Write the helper from
+    scratch — this test exercises the cold-start self-write path.
   - Every public function must have full type annotations on parameters and
     return type. CI runs mypy --strict.
   - Use graft.context.request to call the GitHub API. Do not import httpx.
@@ -114,10 +120,17 @@ else
   EXIT_CODE=1
 fi
 
-if git log --oneline -- helpers/ 2>/dev/null | grep -qi 'graft'; then
+GATE_C_LOG="$(git log --oneline -- helpers/ 2>&1)"
+GATE_C_GIT_EXIT=$?
+echo "$GATE_C_LOG" | grep -qi 'graft'
+GATE_C_GREP_EXIT=$?
+if [[ $GATE_C_GREP_EXIT -eq 0 ]]; then
   echo "PASS (c): git log helpers/ contains daemon auto-commit"
 else
   echo "FAIL (c): no auto-commit found in git log helpers/"
+  echo "         git exit=$GATE_C_GIT_EXIT, grep exit=$GATE_C_GREP_EXIT"
+  echo "         git log --oneline -- helpers/ output:"
+  echo "$GATE_C_LOG" | sed 's/^/           /'
   EXIT_CODE=1
 fi
 
@@ -136,6 +149,14 @@ else
   echo "=== evidence dump (paste this back to lead for diagnosis) ==="
   echo "--- git log --all --oneline ---"
   git log --all --oneline 2>&1 || true
+  echo "--- git log --diff-filter=A --all --stat -- helpers/github.py ---"
+  git log --diff-filter=A --all --stat -- helpers/github.py 2>&1 || true
+  echo "--- git show --stat HEAD ---"
+  git show --stat HEAD 2>&1 || true
+  echo "--- git ls-tree -r --name-only HEAD ---"
+  git ls-tree -r --name-only HEAD 2>&1 || true
+  echo "--- git log --all --stat ---"
+  git log --all --stat 2>&1 || true
   echo "--- git status --short ---"
   git status --short 2>&1 || true
   echo "--- git diff HEAD ---"
