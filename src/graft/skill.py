@@ -10,11 +10,31 @@ from graft.stats import ServiceStats, aggregate
 
 VERSION_PLACEHOLDER = "{{VERSION}}"
 INDEX_HEADER = "# graft helpers index (auto-generated)\n\n"
+PROJECT_SKILL_PATH = Path(".claude/skills/graft/SKILL.md")
+CLAUDE_MD_NOTE = (
+    "\nThis project uses graft. See `.claude/skills/graft/SKILL.md` for helper conventions.\n"
+)
 
 
 def render_skill_md(template: str, version: str) -> str:
     """Substitute {{VERSION}} placeholder in SKILL.md template."""
     return template.replace(VERSION_PLACEHOLDER, version)
+
+
+def write_project_skill(cwd: Path, content: str) -> None:
+    """Write SKILL.md to .claude/skills/graft/ so Claude Code auto-discovers it."""
+    target = cwd / PROJECT_SKILL_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+
+
+def append_claude_md(cwd: Path) -> None:
+    """Append a graft pointer to project CLAUDE.md (idempotent — skip if 'graft' present)."""
+    cm = cwd / "CLAUDE.md"
+    old = cm.read_text(encoding="utf-8") if cm.exists() else ""
+    if "graft" in old:
+        return
+    cm.write_text(old + CLAUDE_MD_NOTE, encoding="utf-8")
 
 
 def generate_index(helpers_dir: Path, stats_path: Path) -> str:

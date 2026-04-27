@@ -52,7 +52,7 @@ def test_init_creates_scaffold(in_tmp: Path, capsys: pytest.CaptureFixture[str])
     assert (in_tmp / "helpers").is_dir()
     assert (in_tmp / "helpers" / "__init__.py").exists()
     assert (in_tmp / ".graft").is_dir()
-    skill = in_tmp / "SKILL.md"
+    skill = in_tmp / ".claude/skills/graft/SKILL.md"
     assert skill.exists()
     text = skill.read_text(encoding="utf-8")
     assert text.startswith(f"# graft v{cli.VERSION}")
@@ -67,7 +67,7 @@ def test_init_idempotent(in_tmp: Path) -> None:
 
     assert cli.main(["init"]) == 0
     assert (in_tmp / "helpers" / "github.py").read_text(encoding="utf-8") == "# user code"
-    assert (in_tmp / "SKILL.md").exists()
+    assert (in_tmp / ".claude/skills/graft/SKILL.md").exists()
 
 
 def test_init_writes_helpers_init_with_eager_load(in_tmp: Path) -> None:
@@ -141,7 +141,7 @@ def test_sync_warns_when_skill_md_differs_without_force(
     in_tmp: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     cli.main(["init"])
-    skill = in_tmp / "SKILL.md"
+    skill = in_tmp / ".claude/skills/graft/SKILL.md"
     skill.write_text("EDITED BY USER\n", encoding="utf-8")
 
     rc = cli.main(["sync"])
@@ -153,7 +153,7 @@ def test_sync_warns_when_skill_md_differs_without_force(
 
 def test_sync_force_overwrites(in_tmp: Path, capsys: pytest.CaptureFixture[str]) -> None:
     cli.main(["init"])
-    skill = in_tmp / "SKILL.md"
+    skill = in_tmp / ".claude/skills/graft/SKILL.md"
     skill.write_text("EDITED BY USER\n", encoding="utf-8")
 
     rc = cli.main(["sync", "--force"])
@@ -627,7 +627,7 @@ def test_sync_treats_crlf_target_as_unchanged(
     """CRLF SKILL.md whose normalized content matches the template is not flagged as drift."""
     cli.main(["init"])
     capsys.readouterr()
-    skill = in_tmp / "SKILL.md"
+    skill = in_tmp / ".claude/skills/graft/SKILL.md"
     skill.write_text(skill.read_text(encoding="utf-8").replace("\n", "\r\n"), encoding="utf-8")
 
     rc = cli.main(["sync"])

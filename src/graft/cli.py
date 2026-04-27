@@ -32,13 +32,14 @@ def init(_args: argparse.Namespace) -> int:
     (cwd / "helpers").mkdir(exist_ok=True)
     (cwd / "helpers" / "__init__.py").write_text(_read_pkg("init.tmpl"), encoding="utf-8")
     (cwd / ".graft").mkdir(exist_ok=True)
-    (cwd / "SKILL.md").write_text(_render_template(), encoding="utf-8")
+    skill.write_project_skill(cwd, _render_template())
+    skill.append_claude_md(cwd)
     gi = cwd / ".gitignore"
     old = gi.read_text(encoding="utf-8").splitlines() if gi.exists() else []
     have = set(map(str.strip, old))
     if missing := [e for e in (".graft/", "__pycache__/", "*.pyc") if e not in have]:
         gi.write_text("\n".join(old + missing) + "\n", encoding="utf-8")
-    print("graft initialized: helpers/, .graft/, SKILL.md", file=sys.stderr)
+    print("graft initialized: helpers/, .graft/, .claude/skills/graft/, CLAUDE.md", file=sys.stderr)
     return 0
 
 
@@ -49,13 +50,13 @@ def sync(args: argparse.Namespace) -> int:
     index = skill.generate_index(helpers_dir, cwd / ".graft" / "stats.jsonl")
     (helpers_dir / "INDEX.md").write_text(index, encoding="utf-8")
 
-    target = cwd / "SKILL.md"
+    target = cwd / skill.PROJECT_SKILL_PATH
     rendered = _render_template()
     if not target.exists():
-        target.write_text(rendered, encoding="utf-8")
+        skill.write_project_skill(cwd, rendered)
     elif target.read_text(encoding="utf-8").replace("\r\n", "\n") != rendered:
         if args.force:
-            target.write_text(rendered, encoding="utf-8")
+            skill.write_project_skill(cwd, rendered)
             print("SKILL.md updated (--force)", file=sys.stderr)
         else:
             print(
