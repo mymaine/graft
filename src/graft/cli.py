@@ -32,6 +32,7 @@ def init(_args: argparse.Namespace) -> int:
     (cwd / "helpers").mkdir(exist_ok=True)
     (cwd / "helpers" / "__init__.py").write_text(_read_pkg("init.tmpl"), encoding="utf-8")
     (cwd / ".graft").mkdir(exist_ok=True)
+    skill.write_auth_stub(cwd)
     skill.write_project_skill(cwd, _render_template())
     gi = cwd / ".gitignore"
     old = gi.read_text(encoding="utf-8").splitlines() if gi.exists() else []

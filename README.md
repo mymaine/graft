@@ -1,6 +1,6 @@
 # graft
 
-> A self-healing HTTP API harness for AI agents. The agent self-edits its own helpers; git is the memory.
+> A self-editing HTTP API harness for AI agents. The agent writes and revises its own helpers; git is the memory.
 
 **Status**: Phase 1 (MVP) — end-to-end self-edit loop working with GitHub API. Public release imminent.
 

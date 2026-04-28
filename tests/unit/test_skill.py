@@ -11,6 +11,7 @@ from graft.skill import (
     PROJECT_SKILL_PATH,
     generate_index,
     render_skill_md,
+    write_auth_stub,
     write_project_skill,
 )
 
@@ -206,3 +207,20 @@ def test_write_project_skill_creates_nested_dirs(tmp_path: Path) -> None:
     target = tmp_path / PROJECT_SKILL_PATH
     assert target.read_text(encoding="utf-8") == "skill body\n"
     assert target.parent.is_dir()
+
+
+def test_write_auth_stub_creates_when_missing(tmp_path: Path) -> None:
+    write_auth_stub(tmp_path)
+    target = tmp_path / ".graft" / "auth.toml"
+    text = target.read_text(encoding="utf-8")
+    assert "graft auth tokens" in text
+    assert "[openai]" in text
+    assert "sk-..." in text
+
+
+def test_write_auth_stub_skips_when_exists(tmp_path: Path) -> None:
+    target = tmp_path / ".graft" / "auth.toml"
+    target.parent.mkdir(parents=True)
+    target.write_text('[openai]\ntoken = "sk-real-secret"\n', encoding="utf-8")
+    write_auth_stub(tmp_path)
+    assert target.read_text(encoding="utf-8") == '[openai]\ntoken = "sk-real-secret"\n'

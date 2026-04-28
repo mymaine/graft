@@ -6,7 +6,7 @@ when_to_use: User asks to call an API, integrate a SaaS service, fetch JSON from
 
 # graft v{{VERSION}}
 
-> Self-healing HTTP API harness. You write the helpers. Git is the memory.
+> Self-editing HTTP API harness. You write and revise the helpers. Git is the memory.
 
 ## What graft is
 
@@ -29,6 +29,16 @@ external service
 
 graft is **not** a tool framework, prompt template, or planner. It does not
 manage your control flow. It gives you raw Python and a thin HTTP relay.
+
+## Why this project has new directories
+
+After `graft init`, the project root has three new things. Each is at its location for a reason — do not move them:
+
+- `helpers/` — the Python files you (the agent) write and edit. At the project root because Python imports from cwd: `from helpers.<service> import ...`.
+- `.graft/` — daemon runtime data: port file, stats, auth tokens (`auth.toml`). Hidden directory like `.git/` / `.vscode/`. Gitignored.
+- `.claude/skills/graft/` — this `SKILL.md` lives here so Claude Code's Skills mechanism auto-discovers it on session start.
+
+`graft init` also appends `.graft/`, `__pycache__/`, `*.pyc` to the project `.gitignore` if missing.
 
 ## Discovery: read these in order each task
 

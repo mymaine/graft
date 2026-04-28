@@ -11,6 +11,13 @@ from graft.stats import ServiceStats, aggregate
 VERSION_PLACEHOLDER = "{{VERSION}}"
 INDEX_HEADER = "# graft helpers index (auto-generated)\n\n"
 PROJECT_SKILL_PATH = Path(".claude/skills/graft/SKILL.md")
+AUTH_STUB = """\
+# graft auth tokens — gitignored, never commit
+# [openai]
+# token = "sk-..."
+# [github]
+# token = "ghp_..."
+"""
 
 
 def render_skill_md(template: str, version: str) -> str:
@@ -23,6 +30,14 @@ def write_project_skill(cwd: Path, content: str) -> None:
     target = cwd / PROJECT_SKILL_PATH
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content, encoding="utf-8")
+
+
+def write_auth_stub(cwd: Path) -> None:
+    """Write a commented auth.toml stub if not already present (idempotent)."""
+    target = cwd / ".graft" / "auth.toml"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not target.exists():
+        target.write_text(AUTH_STUB, encoding="utf-8")
 
 
 def generate_index(helpers_dir: Path, stats_path: Path) -> str:

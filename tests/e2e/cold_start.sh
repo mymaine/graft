@@ -46,9 +46,9 @@ git init -q
 git config user.email "test@cold-start"
 git config user.name  "test"
 
-# Ignore graft runtime so the dirty-tree gate doesn't trip auto-commit
+# `graft init` will append .graft/ + __pycache__/ + *.pyc; here we only need
+# daemon.log (cold_start writes daemon stdout there).
 cat > .gitignore <<EOF
-.graft/
 daemon.log
 EOF
 

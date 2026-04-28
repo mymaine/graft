@@ -1,13 +1,13 @@
 [project]
 name = "graft"
 version = "0.0.0"
-description = "Self-healing HTTP API harness for AI agents — agent self-edits its own helpers, git is the memory."
+description = "Self-editing HTTP API harness for AI agents — agent writes and revises its own helpers, git is the memory."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [{ name = "maine" }]
-keywords = ["agent", "harness", "llm", "claude-code", "self-healing", "http"]
+keywords = ["agent", "harness", "llm", "claude-code", "self-editing", "http"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
