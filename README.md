@@ -29,8 +29,17 @@ LOC is a feature.
 graft requires Python 3.11+ and [uv](https://github.com/astral-sh/uv).
 
 ```bash
-uv pip install graft        # once published; for now: uv pip install -e .
+# Install globally from GitHub (recommended, pre-PyPI)
+uv tool install git+https://github.com/mymaine/graft
+
+# Or try once without installing anything
+uvx --from git+https://github.com/mymaine/graft graft init
+
+# Once published to PyPI
+uv tool install graft
 ```
+
+After `uv tool install`, the `graft` command is on your PATH in any directory — graft is a per-project tool but the binary itself is global, the same way `git` is global but operates on whichever repo you're in.
 
 ## Quickstart
 
