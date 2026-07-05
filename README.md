@@ -2,7 +2,7 @@
 
 > A self-editing HTTP API harness for AI agents. The agent writes and revises its own helpers; git is the memory.
 
-**Status**: Phase 1 (MVP) — end-to-end self-edit loop working with GitHub API. Public release imminent.
+**Status**: 📦 Archived (2026-07-05) — development frozen; kept public as a portfolio piece. The end-to-end self-edit loop works with the GitHub API; see [docs/](docs/) for the spec and decision records. Not accepting PRs.
 
 ## Why
 
