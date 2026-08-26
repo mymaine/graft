@@ -1,8 +1,10 @@
 # graft
 
+![graft logo](docs/assets/GRAFT-LOGO.png)
+
 > A self-editing HTTP API harness for AI agents. The agent writes and revises its own helpers; git is the memory.
 
-**Status**: 📦 Archived (2026-07-05) — development frozen; kept public as a portfolio piece. The end-to-end self-edit loop works with the GitHub API; see [docs/](docs/) for the spec and decision records. Not accepting PRs.
+**Status**: 📦 Archived (2026-07-05) — development frozen; kept public as a portfolio piece. The end-to-end self-edit loop works with the GitHub API. [docs/](docs/) contains a draft spec for an unexecuted next direction ([skill-form](docs/features/skill-form/spec.md): de-daemonize + Claude Code Plugin); the original spec and decision records live outside this repo. Not accepting PRs.
 
 ## Why
 
@@ -34,10 +36,9 @@ uv tool install git+https://github.com/mymaine/graft
 
 # Or try once without installing anything
 uvx --from git+https://github.com/mymaine/graft graft init
-
-# Once published to PyPI
-uv tool install graft
 ```
+
+graft is not on PyPI (the name is taken by an unrelated package) — install from GitHub as above.
 
 After `uv tool install`, the `graft` command is on your PATH in any directory — graft is a per-project tool but the binary itself is global, the same way `git` is global but operates on whichever repo you're in.
 
